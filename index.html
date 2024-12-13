@@ -148,7 +148,13 @@
       row.querySelector('.unit-cost').textContent = unitCost.toFixed(2);
 
       // Calculate Extension Cost (trimmed to 2 decimal places without rounding)
-      const extensionCost = apq * unitCost;
+      let extensionCost = 0;
+      if(apq != epq) {
+        const epqCost = epq / .95;
+        extensionCost = parseFloat((purchasePrice * epqCost).toFixed(2));
+      } else {
+        extensionCost = apq * unitCost;
+      }
       row.querySelector('.extension-cost').textContent = extensionCost.toFixed(2);
 
       updateTotalCost();
