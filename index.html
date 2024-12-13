@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Costing Table</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    /* Custom styles */
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f8f9fa;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .table {
+      margin-top: 20px;
+    }
+
+    .table th, .table td {
+      text-align: center;
+    }
+
+    .form-control {
+      max-width: 200px;
+    }
+
+    .table .unit-cost,
+    .table .extension-cost {
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+
+    .btn-primary {
+      background-color: #007bff;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background-color: #0056b3;
+    }
+
+    .total-cost {
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+
+    .card {
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      border-radius: 8px;
+      background-color: white;
+      margin-top: 20px;
+    }
+
+    h2 {
+      color: #343a40;
+      font-weight: 600;
+    }
+
+    .add-row-button {
+      margin-top: 15px;
+    }
+
+    .divisor-input {
+      margin-top: 10px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="container mt-5">
+    <div class="card">
+      <h2 class="mb-4">Dynamic Costing Table</h2>
+      <table class="table table-bordered table-hover">
+        <thead class="table-success">
+          <tr>
+            <th>Ingredients</th>
+            <th>APQ</th>
+            <th>EPQ</th>
+            <th>Purchase Price</th>
+            <th>Unit Cost</th>
+            <th>Extension Cost</th>
+          </tr>
+        </thead>
+        <tbody id="costingTable">
+          <tr>
+            <td><input type="text" class="form-control" placeholder="Ingredient"></td>
+            <td><input type="number" class="form-control apq" placeholder="APQ" min="1"></td>
+            <td><input type="number" class="form-control epq" placeholder="EPQ" min="1"></td>
+            <td><input type="text" class="form-control purchase-price" placeholder="Purchase Price"></td>
+            <td class="unit-cost text-center">0.00</td>
+            <td class="extension-cost text-center">0.00</td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="btn btn-primary add-row-button" id="addRow">Add Row</button>
+
+      <!-- Divisor Input -->
+      <div class="divisor-input">
+        <label for="divisor" class="form-label">Enter Divisor:</label>
+        <input type="number" id="divisor" class="form-control" min="1" placeholder="Divisor">
+      </div>
+
+      <h4 class="mt-4 total-cost">Total Cost: <span id="totalCost">0.00</span></h4>
+      <h4 class="mt-4 total-cost">Divided Cost: <span id="dividedCost">0.00</span></h4>
+    </div>
+  </div>
+
+  <!-- Bootstrap Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Function to calculate Unit Cost and Extension Cost
+    function calculateCosts(row) {
+      const apq = parseFloat(row.querySelector('.apq').value) || 0;
+      const epq = parseFloat(row.querySelector('.epq').value) || 0;
+
+      // Parse Purchase Price input
+      let purchasePriceInput = row.querySelector('.purchase-price').value;
+      let purchasePrice = 0;
+
+      // Safely evaluate fractions (e.g., "710/170")
+      if (purchasePriceInput.includes('/')) {
+        const parts = purchasePriceInput.split('/');
+        const numerator = parseFloat(parts[0]);
+        const denominator = parseFloat(parts[1]);
+
+        if (numerator && denominator) {
+          purchasePrice = numerator / denominator;
+        }
+      } else {
+        purchasePrice = parseFloat(purchasePriceInput) || 0;
+      }
+
+      // Function to trim decimals to 2 places without rounding
+      function trimDecimal(num) {
+        return Math.floor(num * 100) / 100;
+      }
+
+      // Calculate Unit Cost (trimmed to 2 decimal places without rounding)
+      const unitCost = trimDecimal(purchasePrice);
+      row.querySelector('.unit-cost').textContent = unitCost.toFixed(2);
+
+      // Calculate Extension Cost (trimmed to 2 decimal places without rounding)
+      const extensionCost = apq * unitCost;
+      row.querySelector('.extension-cost').textContent = extensionCost.toFixed(2);
+
+      updateTotalCost();
+    }
+
+    // Function to update the total cost
+    function updateTotalCost() {
+      let totalCost = 0;
+      document.querySelectorAll('.extension-cost').forEach(cell => {
+        totalCost += parseFloat(cell.textContent);
+      });
+      document.getElementById('totalCost').textContent = totalCost.toFixed(2);
+
+      // Get the divisor value
+      const divisor = parseFloat(document.getElementById('divisor').value) || 1;
+      const dividedCost = totalCost / divisor;
+      document.getElementById('dividedCost').textContent = dividedCost.toFixed(2);
+    }
+
+    // Add event listener for dynamic calculation
+    document.getElementById('costingTable').addEventListener('input', (e) => {
+      if (
+        e.target.classList.contains('apq') ||
+        e.target.classList.contains('epq') ||
+        e.target.classList.contains('purchase-price')
+      ) {
+        calculateCosts(e.target.closest('tr'));
+      }
+    });
+
+    // Add new row functionality
+    document.getElementById('addRow').addEventListener('click', () => {
+      const table = document.getElementById('costingTable');
+      const newRow = document.createElement('tr');
+      newRow.innerHTML = ` 
+        <td><input type="text" class="form-control" placeholder="Ingredient"></td>
+        <td><input type="number" class="form-control apq" placeholder="APQ" min="1"></td>
+        <td><input type="number" class="form-control epq" placeholder="EPQ" min="1"></td>
+        <td><input type="text" class="form-control purchase-price" placeholder="Purchase Price"></td>
+        <td class="unit-cost text-center">0.00</td>
+        <td class="extension-cost text-center">0.00</td>
+      `;
+      table.appendChild(newRow);
+    });
+
+    // Add event listener for divisor input change
+    document.getElementById('divisor').addEventListener('input', () => {
+      updateTotalCost();
+    });
+  </script>
+</body>
+</html>
