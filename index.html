@@ -4,30 +4,38 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dynamic Costing Table</title>
+  <!-- Google Fonts - Poppins -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     /* Custom styles */
     body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f8f9fa;
+      font-family: 'Poppins', sans-serif;
+      background-color: #343a40;
+      color: #333;
     }
 
     .container {
-      max-width: 1000px;
+      max-width: 1200px;
       margin: 0 auto;
     }
 
     .table {
       margin-top: 20px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
 
     .table th, .table td {
       text-align: center;
+      vertical-align: middle;
     }
 
     .form-control {
       max-width: 200px;
+      border-radius: 5px;
     }
 
     .table .unit-cost,
@@ -39,6 +47,7 @@
     .btn-primary {
       background-color: #007bff;
       border: none;
+      border-radius: 5px;
     }
 
     .btn-primary:hover {
@@ -48,14 +57,16 @@
     .total-cost {
       font-size: 1.2em;
       font-weight: bold;
+      color: #007bff;
     }
 
     .card {
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      padding: 20px;
+      padding: 30px;
       border-radius: 8px;
       background-color: white;
       margin-top: 20px;
+      border-top: 5px solid #007bff;
     }
 
     h2 {
@@ -65,10 +76,26 @@
 
     .add-row-button {
       margin-top: 15px;
+      background-color: #28a745;
+      border-color: #28a745;
+    }
+
+    .add-row-button:hover {
+      background-color: #218838;
+      border-color: #1e7e34;
     }
 
     .divisor-input {
       margin-top: 10px;
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .divisor-input label {
+      font-weight: 600;
+      color: #495057;
     }
 
   </style>
@@ -104,14 +131,16 @@
 
       <!-- Divisor Input -->
       <div class="divisor-input">
-        <label for="divisor" class="form-label">Enter Divisor:</label>
+        <label for="divisor" class="form-label">Enter Serving:</label>
         <input type="number" id="divisor" class="form-control" min="1" placeholder="Divisor">
       </div>
 
       <h4 class="mt-4 total-cost">Total Cost: <span id="totalCost">0.00</span></h4>
       <h4 class="mt-4 total-cost">Divided Cost: <span id="dividedCost">0.00</span></h4>
     </div>
+    <p>developed by: fusby aikawa</p>
   </div>
+
 
   <!-- Bootstrap Bundle with Popper -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -123,39 +152,85 @@
 
       // Parse Purchase Price input
       let purchasePriceInput = row.querySelector('.purchase-price').value;
-      let purchasePrice = 0;
+let purchasePrice = 0;
+let finalPurchasePrice = 0;
 
-      // Safely evaluate fractions (e.g., "710/170")
-      if (purchasePriceInput.includes('/')) {
-        const parts = purchasePriceInput.split('/');
-        const numerator = parseFloat(parts[0]);
-        const denominator = parseFloat(parts[1]);
+// Safely evaluate fractions (e.g., "710/170")
+if (purchasePriceInput.includes('/')) {
+  const parts = purchasePriceInput.split('/');
+  const numerator = parseFloat(parts[0]);
+  const denominator = parseFloat(parts[1]);
 
-        if (numerator && denominator) {
-          purchasePrice = numerator / denominator;
-        }
+  if (numerator && denominator) {
+    purchasePrice = numerator / denominator;
+    let sPur = purchasePrice.toString();
+
+    if (sPur.includes('.')) {
+      const [integerPart, decimalPart] = sPur.split('.');
+
+      console.log(decimalPart.length); // Log the length of the decimal part
+
+      if (decimalPart.length === 3) {
+        // Return the full decimal if the length is 3
+        finalPurchasePrice = parseFloat(sPur);
+        console.log(finalPurchasePrice);
+      } else if (decimalPart.length > 3) {
+        // Trim the decimal part to exactly 2 places
+        sPur = integerPart + '.' + decimalPart.slice(0, 2);
+        finalPurchasePrice = parseFloat(sPur);
+        console.log(finalPurchasePrice);
       } else {
-        purchasePrice = parseFloat(purchasePriceInput) || 0;
+        // Retain the original purchasePrice if decimal length is <= 2
+        finalPurchasePrice = purchasePrice;
       }
+    } else {
+      // No decimals; assign the integer value
+      finalPurchasePrice = purchasePrice;
+    }
+  }
+}
+      const unitCost = finalPurchasePrice;
+console.log("Unit Cost: " + unitCost);
+row.querySelector('.unit-cost').textContent = unitCost;
 
-      // Function to trim decimals to 2 places without rounding
-      function trimDecimal(num) {
-        return Math.floor(num * 100) / 100;
-      }
+// Calculate Extension Cost (trimmed to 2 decimal places without rounding)
+let extensionCost = 0;
+const rawEpqCost = epq / 0.95;
+let epqCost;
 
-      // Calculate Unit Cost (trimmed to 2 decimal places without rounding)
-      const unitCost = trimDecimal(purchasePrice);
-      row.querySelector('.unit-cost').textContent = unitCost.toFixed(2);
+// Handle decimal conditions for epqCost
+if (rawEpqCost.toString().includes('.')) {
+  const [integerPart, decimalPart] = rawEpqCost.toString().split('.');
 
-      // Calculate Extension Cost (trimmed to 2 decimal places without rounding)
-      let extensionCost = 0;
-      if(apq != epq) {
-        const epqCost = epq / .95;
-        extensionCost = parseFloat((purchasePrice * epqCost).toFixed(2));
-      } else {
-        extensionCost = apq * unitCost;
-      }
-      row.querySelector('.extension-cost').textContent = extensionCost.toFixed(2);
+  if (decimalPart.length === 3) {
+    // Return full 3-decimal value
+    epqCost = parseFloat(rawEpqCost.toFixed(3));
+    console.log("epqCost (3 decimals): " + epqCost);
+  } else if (decimalPart.length > 3) {
+    // Trim to 2 decimal places without rounding
+    epqCost = parseFloat(integerPart + '.' + decimalPart.slice(0, 2));
+    console.log("epqCost (trimmed to 2 decimals): " + epqCost);
+  } else {
+    // Retain the original value if decimal length <= 2
+    epqCost = rawEpqCost;
+    console.log("epqCost (<= 2 decimals): " + epqCost);
+  }
+} else {
+  // No decimals; assign the integer value
+  epqCost = rawEpqCost;
+  console.log("epqCost (integer): " + epqCost);
+}
+
+// Check if apq and epq are equal
+if (apq === epq) {
+  console.log("apq and epq are equal");
+  extensionCost = apq * unitCost;
+} else {
+  extensionCost = parseFloat((finalPurchasePrice * epqCost).toFixed(2));
+}
+
+console.log("Extension Cost: " + extensionCost);
+row.querySelector('.extension-cost').textContent = extensionCost.toFixed(2);
 
       updateTotalCost();
     }
